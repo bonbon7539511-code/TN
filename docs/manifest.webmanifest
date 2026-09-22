@@ -3,8 +3,8 @@
   "short_name": "旅程備忘",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f7f9fc",
-  "theme_color": "#10243e",
+  "background_color": "#f5f8fa",
+  "theme_color": "#f5f8fa",
   "description": "把出國前準備、行程與採買集中管理的旅行工作台。",
   "icons": [{"src":"./favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }
