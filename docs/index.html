@@ -319,7 +319,7 @@
         calendarCursor.setDate(1);
         function setCategory(value) { const options = ['重要文件', '衣物', '電子用品', '藥品', '其他']; const selected = options.includes(value) ? value : '其他'; $('itemCategory').value = selected; $('itemCategoryLabel').textContent = selected; document.querySelectorAll('.form-menu-option').forEach((option) => { const active = option.dataset.value === selected; option.classList.toggle('active', active); option.setAttribute('aria-selected', active ? 'true' : 'false'); }); }
         function closeCategoryMenu() { $('categoryMenu').classList.remove('open'); $('itemCategoryButton').setAttribute('aria-expanded', 'false'); }
-        function toggleCategoryMenu() { closeFormPickers(); const menu = $('categoryMenu'); const open = !menu.classList.contains('open'); menu.classList.toggle('open', open); $('itemCategoryButton').setAttribute('aria-expanded', String(open)); }
+        function toggleCategoryMenu() { const menu = $('categoryMenu'); const open = menu.classList.contains('open'); if (open) { closeCategoryMenu(); return; } closeFormPickers(); menu.classList.add('open'); $('itemCategoryButton').setAttribute('aria-expanded', 'true'); }
         function pad(value) { return String(value).padStart(2, '0'); }
         function formatDateValue(date) { return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()); }
         function formatDateLabel(value) { if (!value) return '選擇日期'; const parts = value.split('-'); return parts[0] + '年' + Number(parts[1]) + '月' + Number(parts[2]) + '日'; }
@@ -339,7 +339,7 @@
           $('packingTabCount').textContent = data.packing.length; $('scheduleTabCount').textContent = data.schedule.length; $('shoppingTabCount').textContent = data.shopping.length;
           document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.view === activeView));
           const copy = { packing: ['出發前要帶什麼？', '先把腦中想到的東西記下來'], schedule: ['這趟旅程怎麼走？', '把重要時間點放進來，途中更安心。'], shopping: ['還需要買什麼？', '記下品項與預算，採買時一次搞定。'] }[activeView]; $('panelTitle').textContent = copy[0]; $('panelDescription').textContent = copy[1];
-          const query = $('searchInput').value.trim().toLowerCase(); const filter = statusFilterValue; const items = currentItems().filter((item) => (!query || [item.title, item.note, item.category].join(' ').toLowerCase().includes(query)) && (filter === 'all' || (filter === 'done' ? item.done : !item.done)));
+          const query = $('searchInput').value.trim().toLowerCase(); const filter = statusFilterValue; const items = currentItems().slice().sort((a, b) => Number(a.done) - Number(b.done)).filter((item) => (!query || [item.title, item.note, item.category].join(' ').toLowerCase().includes(query)) && (filter === 'all' || (filter === 'done' ? item.done : !item.done)));
           $('itemsList').innerHTML = items.length ? items.map(itemTemplate).join('') : `<div class="empty"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z"/></svg></div><h4>${query || filter !== 'all' ? '找不到符合的項目' : '這裡還是空的'}</h4><p>${query || filter !== 'all' ? '換個關鍵字或篩選條件試試看。' : '按下「新增項目」，把下一件要做的事放進來。'}</p></div>`;
           renderUpcoming();
         }
