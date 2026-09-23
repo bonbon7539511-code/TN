@@ -86,9 +86,9 @@
       .primary-btn:hover { background: var(--accent-dark); transform: translateY(-1px); }
       .secondary-btn { border: 1px solid var(--line); border-radius: 12px; padding: 10px 13px; color: var(--ink); background: #fff; font-weight: 700; }
       .secondary-btn:hover { border-color: #c9d4e0; background: #fafcfe; }
-      .filter-row { display: flex; gap: 8px; margin-bottom: 16px; }
+      .filter-row { display: grid; grid-template-columns: minmax(0, 1fr) 148px; gap: 8px; margin-bottom: 16px; }
       .filter-row input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; color: var(--ink); background: #fcfdfe; }
-      .filter-select { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; color: var(--ink); background: #fcfdfe; }
+      .filter-select { width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; color: var(--ink); background: #fcfdfe; }
 
       .items-list { display: grid; gap: 10px; }
       .list-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 14px; background: #fff; transition: border-color .2s, box-shadow .2s, transform .2s; }
@@ -96,7 +96,7 @@
       .list-item.done { background: #fbfdfc; }
       .check { appearance: none; width: 22px; height: 22px; margin: 0; border: 2px solid #cad4df; border-radius: 7px; background: #fff; position: relative; }
       .check:checked { border-color: var(--blue); background: var(--blue); }
-      .check:checked::after { content: ""; position: absolute; width: 6px; height: 11px; border-right: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(42deg); left: 7px; top: 3px; }
+      .check:checked::after { content: ""; position: absolute; width: 5px; height: 10px; border-right: 2px solid #fff; border-bottom: 2px solid #fff; left: 50%; top: 50%; transform: translate(-50%, -60%) rotate(45deg); }
       .item-title { min-width: 0; margin: 0; font-weight: 750; overflow-wrap: anywhere; }
       .done .item-title { color: #8a98a7; text-decoration: line-through; }
       .item-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 3px; color: var(--muted); font-size: .82rem; }
@@ -140,8 +140,8 @@
       .modal-actions { display: flex; justify-content: end; gap: 9px; margin-top: 4px; }
       .confirm-modal { width: min(100%, 430px); }
       .confirm-message { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
-      .danger-btn { border: 0; border-radius: 12px; padding: 11px 16px; color: #fff; background: #c94d42; font-weight: 750; }
-      .danger-btn:hover { background: #ad3f35; }
+      .danger-btn { border: 0; border-radius: 12px; padding: 11px 16px; color: #fff; background: var(--accent-dark); box-shadow: 0 7px 16px rgba(105, 151, 173, .18); font-weight: 750; }
+      .danger-btn:hover { background: var(--ink); }
       .toast { position: fixed; right: 22px; bottom: 22px; z-index: 20; max-width: min(360px, calc(100vw - 44px)); transform: translateY(20px); opacity: 0; pointer-events: none; padding: 12px 15px; border-radius: 12px; color: #fff; background: var(--ink); box-shadow: var(--shadow); transition: .25s ease; }
       .toast.show { transform: translateY(0); opacity: 1; }
       .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
@@ -161,7 +161,7 @@
         .main-panel { padding: 16px; border-radius: 20px; }
         .panel-head { align-items: flex-start; padding-top: 18px; }
         .panel-head .primary-btn { padding: 10px 12px; font-size: .9rem; }
-        .filter-row { display: grid; grid-template-columns: 1fr auto; }
+        .filter-row { display: grid; grid-template-columns: minmax(0, 1fr) 148px; }
         .filter-row input { grid-column: 1 / -1; }
         .side-stack { grid-template-columns: 1fr; gap: 12px; }
         .side-card { padding: 18px; }
@@ -218,7 +218,7 @@
               <button class="tab" data-view="schedule" type="button">行程 <span class="tab-count" id="scheduleTabCount">0</span></button>
               <button class="tab" data-view="shopping" type="button">購買清單 <span class="tab-count" id="shoppingTabCount">0</span></button>
             </nav>
-            <div class="panel-head"><div><h3 id="panelTitle">出發前要帶什麼？</h3><p id="panelDescription">先把腦中想到的東西記下來，再慢慢整理。</p></div><button class="primary-btn" id="addBtn" type="button">＋ 新增項目</button></div>
+            <div class="panel-head"><div><h3 id="panelTitle">出發前要帶什麼？</h3><p id="panelDescription">先把腦中想到的東西記下來，再慢慢整理。</p></div><button class="primary-btn" id="addBtn" type="button">＋ 新增</button></div>
             <div class="filter-row"><label class="sr-only" for="searchInput">搜尋</label><input id="searchInput" placeholder="搜尋項目…" type="search" /><select class="filter-select" id="statusFilter" aria-label="篩選狀態"><option value="all">全部</option><option value="pending">未完成</option><option value="done">已完成</option></select></div>
             <div class="items-list" id="itemsList"></div>
           </div>
