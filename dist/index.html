@@ -335,7 +335,7 @@
         function dateLabel(date) { if (!date) return ''; const d = new Date(`${date}T00:00:00`); return `${d.getMonth() + 1}/${d.getDate()}`; }
         function render() {
           const all = Object.values(data).flat(); const done = all.filter((item) => item.done).length; const pending = all.length - done; const percent = all.length ? Math.round(done / all.length * 100) : 0;
-          $('overallProgress').style.width = `${percent}%`; $('progressText').textContent = all.length ? `${percent}% 已完成` : '準備開始'; $('pendingNumber').textContent = pending; $('scheduleCount').textContent = data.schedule.length; $('shoppingCount').textContent = data.shopping.length;
+          $('overallProgress').style.width = `${percent}%`; $('progressText').textContent = all.length ? `${percent}% 已完成` : '準備開始'; $('pendingNumber').textContent = pending; $('scheduleCount').textContent = data.schedule.filter((item) => !item.done).length; $('shoppingCount').textContent = data.shopping.filter((item) => !item.done).length;
           $('packingTabCount').textContent = data.packing.length; $('scheduleTabCount').textContent = data.schedule.length; $('shoppingTabCount').textContent = data.shopping.length;
           document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.view === activeView));
           const copy = { packing: ['出發前要帶什麼？', '先把腦中想到的東西記下來'], schedule: ['這趟旅程怎麼走？', '把重要時間點放進來，途中更安心。'], shopping: ['還需要買什麼？', '記下品項與預算，採買時一次搞定。'] }[activeView]; $('panelTitle').textContent = copy[0]; $('panelDescription').textContent = copy[1];
