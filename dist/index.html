@@ -88,7 +88,14 @@
       .secondary-btn:hover { border-color: #c9d4e0; background: #fafcfe; }
       .filter-row { display: grid; grid-template-columns: minmax(0, 1fr) 148px; gap: 8px; margin-bottom: 16px; }
       .filter-row input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; color: var(--ink); background: #fcfdfe; }
-      .filter-select { width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; color: var(--ink); background: #fcfdfe; }
+            .filter-menu { position: relative; min-width: 0; }
+      .filter-select { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; color: var(--ink); background: #fcfdfe; font: inherit; text-align: left; cursor: pointer; }
+      .filter-select svg { flex: 0 0 auto; color: var(--muted); transition: transform .2s ease; }
+      .filter-menu.open .filter-select svg { transform: rotate(180deg); }
+      .filter-options { position: absolute; z-index: 8; top: calc(100% + 6px); right: 0; left: 0; display: grid; gap: 4px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.98); box-shadow: 0 14px 28px rgba(58,84,103,.13); opacity: 0; visibility: hidden; transform: translateY(-4px); pointer-events: none; transition: opacity .18s ease, transform .18s ease, visibility .18s ease; }
+      .filter-menu.open .filter-options { opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+      .filter-option { width: 100%; border: 0; border-radius: 8px; padding: 9px 10px; color: var(--ink); background: transparent; font: inherit; text-align: left; cursor: pointer; }
+      .filter-option:hover, .filter-option.active { color: #365b70; background: #e9f2f5; }
 
       .items-list { display: grid; gap: 10px; }
       .list-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 14px; background: #fff; transition: border-color .2s, box-shadow .2s, transform .2s; }
@@ -218,8 +225,8 @@
               <button class="tab" data-view="schedule" type="button">行程 <span class="tab-count" id="scheduleTabCount">0</span></button>
               <button class="tab" data-view="shopping" type="button">購買清單 <span class="tab-count" id="shoppingTabCount">0</span></button>
             </nav>
-            <div class="panel-head"><div><h3 id="panelTitle">出發前要帶什麼？</h3><p id="panelDescription">先把腦中想到的東西記下來，再慢慢整理。</p></div><button class="primary-btn" id="addBtn" type="button">＋ 新增</button></div>
-            <div class="filter-row"><label class="sr-only" for="searchInput">搜尋</label><input id="searchInput" placeholder="搜尋項目…" type="search" /><select class="filter-select" id="statusFilter" aria-label="篩選狀態"><option value="all">全部</option><option value="pending">未完成</option><option value="done">已完成</option></select></div>
+            <div class="panel-head"><div><h3 id="panelTitle">出發前要帶什麼？</h3><p id="panelDescription">先把腦中想到的東西記下來</p></div><button class="primary-btn" id="addBtn" type="button">＋ 新增</button></div>
+            <div class="filter-row"><label class="sr-only" for="searchInput">搜尋</label><input id="searchInput" placeholder="搜尋項目…" type="search" /><div class="filter-menu" id="statusMenu"><button class="filter-select" id="statusFilter" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="篩選狀態"><span id="statusFilterLabel">全部</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="filter-options" id="statusOptions" role="listbox" aria-label="篩選狀態"><button class="filter-option active" type="button" role="option" data-value="all" aria-selected="true">全部</button><button class="filter-option" type="button" role="option" data-value="pending" aria-selected="false">未完成</button><button class="filter-option" type="button" role="option" data-value="done" aria-selected="false">已完成</button></div></div></div>
             <div class="items-list" id="itemsList"></div>
           </div>
 
@@ -267,6 +274,7 @@
         let activeView = 'packing';
         let editingId = null;
         let pendingDelete = null;
+        let statusFilterValue = 'all';
         let toastTimer;
         const $ = (id) => document.getElementById(id);
         const esc = (value) => String(value ?? '').replace(/[&<>'"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c]));
@@ -276,14 +284,17 @@
         function uid() { return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`; }
         function showToast(message) { const el = $('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2400); }
         function currentItems() { return data[activeView]; }
+        function setStatusFilter(value) { const labels = { all: '全部', pending: '未完成', done: '已完成' }; statusFilterValue = labels[value] ? value : 'all'; $('statusFilterLabel').textContent = labels[statusFilterValue]; document.querySelectorAll('.filter-option').forEach((option) => { const active = option.dataset.value === statusFilterValue; option.classList.toggle('active', active); option.setAttribute('aria-selected', active ? 'true' : 'false'); }); }
+        function toggleStatusMenu() { const menu = $('statusMenu'); const open = !menu.classList.contains('open'); menu.classList.toggle('open', open); $('statusFilter').setAttribute('aria-expanded', String(open)); }
+        function closeStatusMenu() { $('statusMenu').classList.remove('open'); $('statusFilter').setAttribute('aria-expanded', 'false'); }
         function dateLabel(date) { if (!date) return ''; const d = new Date(`${date}T00:00:00`); return `${d.getMonth() + 1}/${d.getDate()}`; }
         function render() {
           const all = Object.values(data).flat(); const done = all.filter((item) => item.done).length; const pending = all.length - done; const percent = all.length ? Math.round(done / all.length * 100) : 0;
           $('overallProgress').style.width = `${percent}%`; $('progressText').textContent = all.length ? `${percent}% 已完成` : '準備開始'; $('pendingNumber').textContent = pending; $('scheduleCount').textContent = data.schedule.length; $('shoppingCount').textContent = data.shopping.length;
           $('packingTabCount').textContent = data.packing.length; $('scheduleTabCount').textContent = data.schedule.length; $('shoppingTabCount').textContent = data.shopping.length;
           document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.view === activeView));
-          const copy = { packing: ['出發前要帶什麼？', '先把腦中想到的東西記下來，再慢慢整理。'], schedule: ['這趟旅程怎麼走？', '把重要時間點放進來，途中更安心。'], shopping: ['還需要買什麼？', '記下品項與預算，採買時一次搞定。'] }[activeView]; $('panelTitle').textContent = copy[0]; $('panelDescription').textContent = copy[1];
-          const query = $('searchInput').value.trim().toLowerCase(); const filter = $('statusFilter').value; const items = currentItems().filter((item) => (!query || [item.title, item.note, item.category].join(' ').toLowerCase().includes(query)) && (filter === 'all' || (filter === 'done' ? item.done : !item.done)));
+          const copy = { packing: ['出發前要帶什麼？', '先把腦中想到的東西記下來'], schedule: ['這趟旅程怎麼走？', '把重要時間點放進來，途中更安心。'], shopping: ['還需要買什麼？', '記下品項與預算，採買時一次搞定。'] }[activeView]; $('panelTitle').textContent = copy[0]; $('panelDescription').textContent = copy[1];
+          const query = $('searchInput').value.trim().toLowerCase(); const filter = statusFilterValue; const items = currentItems().filter((item) => (!query || [item.title, item.note, item.category].join(' ').toLowerCase().includes(query)) && (filter === 'all' || (filter === 'done' ? item.done : !item.done)));
           $('itemsList').innerHTML = items.length ? items.map(itemTemplate).join('') : `<div class="empty"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z"/></svg></div><h4>${query || filter !== 'all' ? '找不到符合的項目' : '這裡還是空的'}</h4><p>${query || filter !== 'all' ? '換個關鍵字或篩選條件試試看。' : '按下「新增項目」，把下一件要做的事放進來。'}</p></div>`;
           renderUpcoming();
         }
@@ -298,14 +309,14 @@ function openDeleteConfirm(item) { pendingDelete = { view: activeView, id: item.
         function exportData() { const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `旅程備忘-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url); showToast('備份檔已下載'); }
         function registerWebMcp() { const context = document.modelContext; if (!context?.registerTool) return; const lifecycle = new AbortController(); const tool = { name: 'add_trip_note', title: '新增旅行項目', description: '新增一筆準備清單、行程或購買清單項目，並同步更新畫面與本機資料。', inputSchema: { type:'object', properties:{ list:{ type:'string', enum:['packing','schedule','shopping'] }, title:{ type:'string' }, note:{ type:'string' }, date:{ type:'string' }, time:{ type:'string' }, price:{ type:'string' } }, required:['list','title'], additionalProperties:false }, annotations:{ readOnlyHint:false }, execute(input) { if (!input || !['packing','schedule','shopping'].includes(input.list) || typeof input.title !== 'string' || !input.title.trim()) throw new Error('需要有效的清單與項目名稱'); data[input.list].unshift({ id: uid(), title: input.title.trim(), note: input.note || '', date: input.date || '', time: input.time || '', price: input.price || '', category: input.list === 'packing' ? '其他' : '', done: false }); saveData(); return { ok:true, list:input.list, title:input.title.trim() }; } }; try { Promise.resolve(context.registerTool(tool, { signal:lifecycle.signal })).catch(() => {}); } catch {} }
 
-        document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => { activeView = tab.dataset.view; $('searchInput').value = ''; $('statusFilter').value = 'all'; render(); }));
-$('addBtn').addEventListener('click', () => openModal()); $('closeModal').addEventListener('click', closeModal); $('cancelModal').addEventListener('click', closeModal); $('modalBackdrop').addEventListener('click', (e) => { if (e.target === $('modalBackdrop')) closeModal(); }); $('closeDeleteConfirm').addEventListener('click', closeDeleteConfirm); $('cancelDelete').addEventListener('click', closeDeleteConfirm); $('confirmDelete').addEventListener('click', confirmDelete); $('confirmBackdrop').addEventListener('click', (e) => { if (e.target === $('confirmBackdrop')) closeDeleteConfirm(); }); $('itemForm').addEventListener('submit', submitForm); $('searchInput').addEventListener('input', render); $('statusFilter').addEventListener('change', render); $('exportBtn').addEventListener('click', exportData); $('importBtn').addEventListener('click', () => $('importFile').click());
+        document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => { activeView = tab.dataset.view; $('searchInput').value = ''; setStatusFilter('all'); closeStatusMenu(); render(); }));
+$('addBtn').addEventListener('click', () => openModal()); $('closeModal').addEventListener('click', closeModal); $('cancelModal').addEventListener('click', closeModal); $('modalBackdrop').addEventListener('click', (e) => { if (e.target === $('modalBackdrop')) closeModal(); }); $('closeDeleteConfirm').addEventListener('click', closeDeleteConfirm); $('cancelDelete').addEventListener('click', closeDeleteConfirm); $('confirmDelete').addEventListener('click', confirmDelete); $('confirmBackdrop').addEventListener('click', (e) => { if (e.target === $('confirmBackdrop')) closeDeleteConfirm(); }); $('itemForm').addEventListener('submit', submitForm); $('searchInput').addEventListener('input', render); $('statusFilter').addEventListener('click', toggleStatusMenu); document.querySelectorAll('.filter-option').forEach((option) => option.addEventListener('click', () => { setStatusFilter(option.dataset.value); closeStatusMenu(); render(); })); document.addEventListener('click', (e) => { if (!e.target.closest('#statusMenu')) closeStatusMenu(); }); $('exportBtn').addEventListener('click', exportData); $('importBtn').addEventListener('click', () => $('importFile').click());
         $('importFile').addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const incoming = JSON.parse(reader.result); if (!incoming.packing || !incoming.schedule || !incoming.shopping) throw new Error(); data = incoming; saveData(); showToast('備份已匯入'); } catch { showToast('這不是有效的備份檔'); } e.target.value = ''; }; reader.readAsText(file); });
 $('itemsList').addEventListener('click', (e) => { const control = e.target.closest('[data-action]'); if (!control) return; const item = currentItems().find((i) => i.id === control.dataset.id); if (!item) return; if (control.dataset.action === 'edit') openModal(item.id); if (control.dataset.action === 'delete') openDeleteConfirm(item); });
         $('itemsList').addEventListener('change', (e) => { if (e.target.dataset.action !== 'toggle') return; const item = currentItems().find((i) => i.id === e.target.dataset.id); if (item) { item.done = e.target.checked; saveData(); showToast(item.done ? '已標記完成' : '已恢復未完成'); } });
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeModal(); closeDeleteConfirm(); } });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeModal(); closeDeleteConfirm(); closeStatusMenu(); } });
         render(); registerWebMcp();
-        if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=4').catch(() => {}));
+        if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=5').catch(() => {}));
       })();
     </script>
   </body>
