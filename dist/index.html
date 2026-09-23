@@ -102,7 +102,6 @@
       .schedule-group { display: grid; gap: 8px; }
       .schedule-group-head { display: flex; align-items: baseline; gap: 10px; padding: 0 2px; }
       .schedule-group-head h4 { margin: 0; color: var(--ink); font-size: 1rem; letter-spacing: -.01em; }
-      .schedule-group-head span { color: var(--muted); font-size: .82rem; font-weight: 700; }
       .schedule-group .items-list { gap: 10px; }
       .list-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 14px; background: #fff; transition: border-color .2s, box-shadow .2s, transform .2s; }
       .list-item:hover { border-color: #cbdde5; box-shadow: 0 8px 22px rgba(58,84,103,.06); transform: translateY(-1px); }
@@ -339,8 +338,7 @@
         function openTimePicker() { closeFormPickers(); renderTimeOptions(); $('timePicker').classList.add('open'); $('itemTimeButton').setAttribute('aria-expanded', 'true'); }
         function closeFormPickers() { closeCategoryMenu(); closeDatePicker(); closeTimePicker(); }
         function dateLabel(date) { if (!date) return ''; const d = new Date(`${date}T00:00:00`); return `${d.getMonth() + 1}/${d.getDate()}`; }
-        function scheduleDateCaption(date) { return date ? dateLabel(date) + ' 的行程' : '尚未安排日期'; }
-        function scheduleGroupsTemplate(items) { const groups = new Map(); items.forEach((item) => { const key = item.date || 'undated'; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(item); }); const entries = Array.from(groups.entries()).sort((a, b) => { if (a[0] === 'undated') return 1; if (b[0] === 'undated') return -1; return a[0].localeCompare(b[0]); }); return '<div class="schedule-groups">' + entries.map(([date, group]) => { group.sort((a, b) => Number(a.done) - Number(b.done)); const heading = date === 'undated' ? '未設定日期' : date; return '<section class="schedule-group"><div class="schedule-group-head"><h4>' + esc(heading) + '</h4><span>' + esc(scheduleDateCaption(date === 'undated' ? '' : date)) + '</span></div><div class="items-list">' + group.map(itemTemplate).join('') + '</div></section>'; }).join('') + '</div>'; }
+        function scheduleGroupsTemplate(items) { const groups = new Map(); items.forEach((item) => { const key = item.date || 'undated'; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(item); }); const entries = Array.from(groups.entries()).sort((a, b) => { if (a[0] === 'undated') return 1; if (b[0] === 'undated') return -1; return a[0].localeCompare(b[0]); }); return '<div class="schedule-groups">' + entries.map(([date, group]) => { group.sort((a, b) => Number(a.done) - Number(b.done)); const heading = date === 'undated' ? '未設定日期' : date; return '<section class="schedule-group"><div class="schedule-group-head"><h4>' + esc(heading) + '</h4></div><div class="items-list">' + group.map(itemTemplate).join('') + '</div></section>'; }).join('') + '</div>'; }
         function render() {
           const all = Object.values(data).flat(); const done = all.filter((item) => item.done).length; const pending = all.length - done; const percent = all.length ? Math.round(done / all.length * 100) : 0;
           $('overallProgress').style.width = `${percent}%`; $('progressText').textContent = all.length ? `${percent}% 已完成` : '準備開始'; $('pendingNumber').textContent = pending; $('scheduleCount').textContent = data.schedule.filter((item) => !item.done).length; $('shoppingCount').textContent = data.shopping.filter((item) => !item.done).length;
