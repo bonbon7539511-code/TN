@@ -138,6 +138,10 @@
       .field input, .field textarea, .field select { width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 11px 12px; color: var(--ink); background: #fbfcfe; }
       .field textarea { min-height: 88px; resize: vertical; }
       .modal-actions { display: flex; justify-content: end; gap: 9px; margin-top: 4px; }
+      .confirm-modal { width: min(100%, 430px); }
+      .confirm-message { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+      .danger-btn { border: 0; border-radius: 12px; padding: 11px 16px; color: #fff; background: #c94d42; font-weight: 750; }
+      .danger-btn:hover { background: #ad3f35; }
       .toast { position: fixed; right: 22px; bottom: 22px; z-index: 20; max-width: min(360px, calc(100vw - 44px)); transform: translateY(20px); opacity: 0; pointer-events: none; padding: 12px 15px; border-radius: 12px; color: #fff; background: var(--ink); box-shadow: var(--shadow); transition: .25s ease; }
       .toast.show { transform: translateY(0); opacity: 1; }
       .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
@@ -239,6 +243,12 @@
         </form>
       </section>
     </div>
+<div class="modal-backdrop" id="confirmBackdrop" role="presentation">
+      <section class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <div class="modal-head"><h3 id="confirmTitle">刪除這個項目？</h3><button class="icon-btn" id="closeDeleteConfirm" type="button" aria-label="關閉確認視窗">×</button></div>
+        <div class="modal-body"><p class="confirm-message" id="confirmMessage"></p><div class="modal-actions"><button class="secondary-btn" id="cancelDelete" type="button">保留項目</button><button class="danger-btn" id="confirmDelete" type="button">刪除</button></div></div>
+      </section>
+    </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script>
@@ -256,6 +266,7 @@
         let data = loadData();
         let activeView = 'packing';
         let editingId = null;
+        let pendingDelete = null;
         let toastTimer;
         const $ = (id) => document.getElementById(id);
         const esc = (value) => String(value ?? '').replace(/[&<>'"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c]));
@@ -280,16 +291,19 @@
         function renderUpcoming() { const list = data.schedule.filter((i) => !i.done).sort((a,b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`)).slice(0, 3); $('upcomingList').innerHTML = list.length ? list.map((item) => `<div class="upcoming-item"><div class="date-block"><b>${item.date ? new Date(`${item.date}T00:00:00`).getDate() : '—'}</b><small>${item.date ? `${new Date(`${item.date}T00:00:00`).getMonth()+1}月` : '待排'}</small></div><div><p class="upcoming-title">${esc(item.title)}</p><p class="upcoming-meta">${item.time ? esc(item.time) : '尚未設定時間'}${item.note ? ` · ${esc(item.note)}` : ''}</p></div></div>`).join('') : '<p style="color:var(--muted);font-size:.9rem;margin:0">目前沒有未完成的行程。</p>'; }
         function openModal(id = null) { editingId = id; const item = id ? currentItems().find((i) => i.id === id) : null; $('modalTitle').textContent = id ? '編輯項目' : '新增項目'; $('itemForm').reset(); if (item) { $('itemTitle').value = item.title || ''; $('itemCategory').value = item.category || '其他'; $('itemNote').value = item.note || ''; $('itemDate').value = item.date || ''; $('itemTime').value = item.time || ''; $('itemPrice').value = item.price || ''; } $('scheduleFields').hidden = activeView !== 'schedule'; $('priceField').hidden = activeView !== 'shopping'; $('commonFields').hidden = activeView === 'schedule'; $('modalBackdrop').classList.add('show'); setTimeout(() => $('itemTitle').focus(), 50); }
         function closeModal() { $('modalBackdrop').classList.remove('show'); editingId = null; }
+function openDeleteConfirm(item) { pendingDelete = { view: activeView, id: item.id, title: item.title }; $('confirmMessage').textContent = '確定要刪除「' + item.title + '」嗎？刪除後無法復原。'; $('confirmBackdrop').classList.add('show'); setTimeout(() => $('confirmDelete').focus(), 50); }
+        function closeDeleteConfirm() { $('confirmBackdrop').classList.remove('show'); pendingDelete = null; }
+        function confirmDelete() { if (!pendingDelete) return; const list = data[pendingDelete.view] || []; data[pendingDelete.view] = list.filter((item) => item.id !== pendingDelete.id); closeDeleteConfirm(); saveData(); showToast('項目已刪除'); }
         function submitForm(event) { event.preventDefault(); const form = new FormData(event.currentTarget); const item = { id: editingId || uid(), title: form.get('title').trim(), category: form.get('category'), note: form.get('note').trim(), date: form.get('date'), time: form.get('time'), price: form.get('price'), done: editingId ? currentItems().find((i) => i.id === editingId).done : false }; if (!item.title) return; if (editingId) data[activeView] = currentItems().map((i) => i.id === editingId ? item : i); else data[activeView].unshift(item); closeModal(); saveData(); showToast(editingId ? '項目已更新' : '項目已新增'); }
         function exportData() { const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `旅程備忘-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url); showToast('備份檔已下載'); }
         function registerWebMcp() { const context = document.modelContext; if (!context?.registerTool) return; const lifecycle = new AbortController(); const tool = { name: 'add_trip_note', title: '新增旅行項目', description: '新增一筆準備清單、行程或購買清單項目，並同步更新畫面與本機資料。', inputSchema: { type:'object', properties:{ list:{ type:'string', enum:['packing','schedule','shopping'] }, title:{ type:'string' }, note:{ type:'string' }, date:{ type:'string' }, time:{ type:'string' }, price:{ type:'string' } }, required:['list','title'], additionalProperties:false }, annotations:{ readOnlyHint:false }, execute(input) { if (!input || !['packing','schedule','shopping'].includes(input.list) || typeof input.title !== 'string' || !input.title.trim()) throw new Error('需要有效的清單與項目名稱'); data[input.list].unshift({ id: uid(), title: input.title.trim(), note: input.note || '', date: input.date || '', time: input.time || '', price: input.price || '', category: input.list === 'packing' ? '其他' : '', done: false }); saveData(); return { ok:true, list:input.list, title:input.title.trim() }; } }; try { Promise.resolve(context.registerTool(tool, { signal:lifecycle.signal })).catch(() => {}); } catch {} }
 
         document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => { activeView = tab.dataset.view; $('searchInput').value = ''; $('statusFilter').value = 'all'; render(); }));
-        $('addBtn').addEventListener('click', () => openModal()); $('closeModal').addEventListener('click', closeModal); $('cancelModal').addEventListener('click', closeModal); $('modalBackdrop').addEventListener('click', (e) => { if (e.target === $('modalBackdrop')) closeModal(); }); $('itemForm').addEventListener('submit', submitForm); $('searchInput').addEventListener('input', render); $('statusFilter').addEventListener('change', render); $('exportBtn').addEventListener('click', exportData); $('importBtn').addEventListener('click', () => $('importFile').click());
+$('addBtn').addEventListener('click', () => openModal()); $('closeModal').addEventListener('click', closeModal); $('cancelModal').addEventListener('click', closeModal); $('modalBackdrop').addEventListener('click', (e) => { if (e.target === $('modalBackdrop')) closeModal(); }); $('closeDeleteConfirm').addEventListener('click', closeDeleteConfirm); $('cancelDelete').addEventListener('click', closeDeleteConfirm); $('confirmDelete').addEventListener('click', confirmDelete); $('confirmBackdrop').addEventListener('click', (e) => { if (e.target === $('confirmBackdrop')) closeDeleteConfirm(); }); $('itemForm').addEventListener('submit', submitForm); $('searchInput').addEventListener('input', render); $('statusFilter').addEventListener('change', render); $('exportBtn').addEventListener('click', exportData); $('importBtn').addEventListener('click', () => $('importFile').click());
         $('importFile').addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const incoming = JSON.parse(reader.result); if (!incoming.packing || !incoming.schedule || !incoming.shopping) throw new Error(); data = incoming; saveData(); showToast('備份已匯入'); } catch { showToast('這不是有效的備份檔'); } e.target.value = ''; }; reader.readAsText(file); });
-        $('itemsList').addEventListener('click', (e) => { const control = e.target.closest('[data-action]'); if (!control) return; const item = currentItems().find((i) => i.id === control.dataset.id); if (!item) return; if (control.dataset.action === 'edit') openModal(item.id); if (control.dataset.action === 'delete') { if (confirm(`確定要刪除「${item.title}」嗎？`)) { data[activeView] = currentItems().filter((i) => i.id !== item.id); saveData(); showToast('項目已刪除'); } } });
+$('itemsList').addEventListener('click', (e) => { const control = e.target.closest('[data-action]'); if (!control) return; const item = currentItems().find((i) => i.id === control.dataset.id); if (!item) return; if (control.dataset.action === 'edit') openModal(item.id); if (control.dataset.action === 'delete') openDeleteConfirm(item); });
         $('itemsList').addEventListener('change', (e) => { if (e.target.dataset.action !== 'toggle') return; const item = currentItems().find((i) => i.id === e.target.dataset.id); if (item) { item.done = e.target.checked; saveData(); showToast(item.done ? '已標記完成' : '已恢復未完成'); } });
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeModal(); closeDeleteConfirm(); } });
         render(); registerWebMcp();
         if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
       })();
