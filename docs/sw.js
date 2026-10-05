@@ -1,4 +1,4 @@
-const CACHE = 'trip-notes-v5';
+const CACHE = 'trip-notes-v6';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './favicon.svg'];
 
 self.addEventListener('install', (event) => event.waitUntil(
@@ -28,5 +28,4 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
-});
 });
