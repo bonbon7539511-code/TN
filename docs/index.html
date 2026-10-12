@@ -222,7 +222,8 @@
         .brand p { display: none; }
         .hero-card h2 { font-size: 1.8rem; }
         .list-item { gap: 9px; padding: 12px; }
-        .item-actions { flex-direction: column; }
+        .item-actions { display: grid; grid-template-columns: repeat(2, 34px); grid-template-rows: repeat(2, 34px); gap: 4px; }
+        .item-actions .mini-btn[data-action="edit"] { grid-column: 1 / -1; justify-self: center; }
         .shopping-settings { align-items: stretch; flex-direction: column; }
         .exchange-controls { justify-content: flex-start; }
         .form-row { grid-template-columns: 1fr; gap: 14px; }
