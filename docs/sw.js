@@ -1,4 +1,4 @@
-const CACHE = 'trip-notes-v6';
+const CACHE = 'trip-notes-v7';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './favicon.svg'];
 
 self.addEventListener('install', (event) => event.waitUntil(
